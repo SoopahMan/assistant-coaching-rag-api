@@ -1,0 +1,27 @@
+## Commands:
+
+Alembic Migration: alembic upgrade head
+
+FastAPI: Fastapi dev main.py
+
+Conda ENV: conda activate (env)
+
+Celery: celery -A worker worker --loglevel=info --pool=solo --concurrency=6 
+
+WSL: WSL Harus aktif
+
+Chroma: chroma run --host 0.0.0.0 --port 8002 --path .\vector_store\chroma_data
+
+Yarn: Yarn Run Dev
+
+## URL:
+
+CELERY_BROKER_URL=redis://localhost:6379/0
+CELERY_RESULT_BACKEND=redis://localhost:6379/1
+
+DATABASE_URL=postgresql+psycopg2://postgres:root@localhost/rag_source
+
+ASYNC_DATABASE_URL=postgresql+asyncpg://postgres:root@localhost/rag_source
+
+TEST:
+paddleocr pp_structurev3 -i https://paddle-model-ecology.bj.bcebos.com/paddlex/imgs/demo_image/pp_structure_v3_demo.png --use_doc_orientation_classify False --use_doc_unwarping False
