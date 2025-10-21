@@ -60,7 +60,7 @@ export default function Home() {
   }
 
   const handleKeyDown = (e) => {
-    if (e.key === 'Enter' && e.altKey) {
+    if (e.key === 'Enter') {
       e.preventDefault()
       e.currentTarget.form?.requestSubmit()
     }

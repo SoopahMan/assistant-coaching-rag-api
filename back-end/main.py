@@ -6,7 +6,7 @@ from fastapi.exceptions import HTTPException, RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.endpoint import auth, document, ocr, question, task, database
+from app.endpoint import auth, document, ocr, question, task
 from utils.response import WebResponse
 
 # logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
@@ -60,4 +60,3 @@ app.include_router(task.router)
 app.include_router(document.router)
 app.include_router(question.router)
 app.include_router(auth.router)
-app.include_router(database.router)
