@@ -12,7 +12,7 @@ const BackButton = () => {
     <Button 
       onClick={handleBack}
       variant="secondary"
-    className="bg-blue-600 text-white rounded-lg cursor-pointer hover:bg-blue-700">
+     className="bg-blue-600 text-white rounded-lg cursor-pointer hover:bg-blue-700">
       Back
     </Button>
   )

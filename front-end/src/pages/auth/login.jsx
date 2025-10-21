@@ -20,7 +20,14 @@ const Login = ({ onLogin }) => {
   setLoading(true)
 
   try {
-    const res = await apiUrl.post('/login', { username, password })
+    const formData = new URLSearchParams()
+    formData.append('username', username)
+    formData.append('password', password)
+
+    const res = await apiUrl.post('/login', formData, {
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+    })
+
     const { access_token, username: uname, role, expires_at } = res.data
 
     setAuth(access_token, { username: uname, role, expires_at })

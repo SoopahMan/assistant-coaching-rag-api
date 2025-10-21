@@ -28,7 +28,7 @@ const HomePage = () => {
               User Management
             </button>
             <button 
-              onClick={() => navigate(`${routePrefix}/database`)} 
+              onClick={() => navigate(`${routePrefix}/database/connect`)} 
               className="p-4 bg-green-500 text-white rounded-lg shadow hover:bg-green-600"
             >
               Database

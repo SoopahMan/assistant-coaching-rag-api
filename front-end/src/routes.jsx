@@ -7,6 +7,9 @@ import Homepage from './pages/homepage'
 import UserManagement from './pages/auth/view_user'
 import AddUser from './pages/auth/add-user' 
 import MyAccount from './pages/auth/my-account'
+import Database from './pages/database'
+import ViewDatabase from './pages/database/view-database'
+import ConnectionList from './pages/database/list-connection'
 
 const AppRoutes = () => (
   <Routes>
@@ -20,6 +23,9 @@ const AppRoutes = () => (
       <Route path="/admin/user-management" element={<UserManagement/>}/>
       <Route path="/admin/add-user" element={<AddUser />}></Route>
       <Route path="/admin/my-account" element={<MyAccount/>}/>
+      <Route path="/admin/database/connect" element={<Database/>}></Route>
+      <Route path="/admin/database/view" element={<ViewDatabase/>}></Route>
+      <Route path="/admin/database/connections" element={<ConnectionList/>}></Route>
     </Route>
 
     <Route element={<RequireAuth allowedRoles={['user']} />}>
@@ -30,7 +36,6 @@ const AppRoutes = () => (
 
 
     <Route element={<RequireAuth allowedRoles={['test']}/>}>
-      <Route path="/admin/database"></Route>
       <Route path="/user/database"></Route>
       <Route path="/ocr"></Route>
     </Route>
