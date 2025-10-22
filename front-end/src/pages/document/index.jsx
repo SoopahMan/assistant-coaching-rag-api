@@ -1,94 +1,26 @@
-import apiUrl from '@/config/api'
-import { DeleteOutlined } from '@ant-design/icons'
-import { Button, Col, message, Modal, Row, Space, Table } from 'antd'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
+import ListDocument from '../../components/document'
+import FileUpload from '../../components/file-upload'
+import { Button } from '@/components/ui/button'
+import { Divider} from 'antd'
+import BackButton from '@/components/ui/back'
 
-const ListDocument = ({ refreshList }) => {
-  const [listData, setListData] = useState([])
-  const [loading, setLoading] = useState(false)
+// import { useNavigate } from 'react-router-dom'
 
-  const fetchData = async () => {
-    setLoading(true)
-    try {
-      const res = await apiUrl.get('/document')
-      const { payload } = res.data
-      setListData(payload)
-      setLoading(false)
-    } catch (error) {
-      setLoading(false)
-      console.log('error', error)
-    }
-  }
+const DocumentPage = () => {
+    // const navigate = useNavigate()
+    const [refreshList, setRefreshList] = useState(false)
 
-  useEffect(() => {
-    fetchData()
-  }, [refreshList])
 
-  const handleDelete = (record) => {
-    Modal.confirm({
-      title: `Delete document "${record.filename}"?`,
-      content: 'This action cannot be undone.',
-      okText: 'Yes, delete',
-      okType: 'danger',
-      cancelText: 'Cancel',
-      onOk: async () => {
-        try {
-          const res = await apiUrl.delete(`/document/${record.id}`)
-          if (res.data.status) {
-            message.success(res.data.message)
-            fetchData()
-          }
-        } catch (error) {
-          message.error('Delete document failed')
-          console.error(error)
-        }
-      },
-    })
-  }
-
-  const columns = [
-    {
-      title: '#',
-      dataIndex: 'page_number',
-      key: 'page_number',
-      render: (_, __, idx) => idx + 1,
-    },
-    { title: 'File', dataIndex: 'filename', key: 'filename' },
-    {
-      title: 'Action',
-      dataIndex: 'action',
-      key: 'action',
-      render: (_, record) => (
-        <Space>
-          <Button
-            color="danger"
-            variant="solid"
-            size="small"
-            icon={<DeleteOutlined />}
-            onClick={() => handleDelete(record)}
-          />
-        </Space>
-      ),
-    },
-  ]
-
-  return (
+return (
     <div>
-      <h4 className="font-semibold">Uploaded Files</h4>
-      <Row justify="center">
-        <Col span={24}>
-          <Table
-            dataSource={listData}
-            columns={columns}
-            rowKey={(record) => record.filename}
-            style={{ marginTop: 20 }}
-            size="small"
-            loading={loading}
-          />
-        </Col>
-      </Row>
+        <BackButton></BackButton>
+        <div className="md:col-span-4 bg-white p-4 rounded shadow overflow-auto">
+            <FileUpload setRefreshList={setRefreshList} />
+            <Divider />
+            <ListDocument refreshList={refreshList} />
+        </div>
     </div>
-  )
+)
 }
-
-export default ListDocument
+export default DocumentPage

@@ -5,9 +5,9 @@ from app.service.auth_handler import verify_token
 router = APIRouter(tags=["Chat Sessions"])
 
 @router.post("/chat/new")
-def create_chat(title: str = None, user=Depends(verify_token)):
+def create_chat(user=Depends(verify_token)):
     memory = ConversationMemory()
-    session_id = memory.create_session(user["sub"], title)
+    session_id = memory.create_session(user["sub"], title=None)
     return {"session_id": session_id, "message": "New chat created"}
 
 @router.get("/chat/list")
@@ -18,6 +18,12 @@ def list_chats(user=Depends(verify_token)):
         {"id": s.id, "title": s.title or f"Chat {s.id}", "created_at": s.created_at}
         for s in sessions
     ]
+
+@router.put("/chat/{session_id}/rename")
+def rename_chat(session_id: int, title: str, user=Depends(verify_token)):
+    memory = ConversationMemory()
+    memory.rename_session(session_id, title)
+    return {"message": "Chat renamed successfully"}
 
 @router.get("/chat/{session_id}")
 def get_chat(session_id: int, user=Depends(verify_token)):

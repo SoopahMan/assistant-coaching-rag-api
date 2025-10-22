@@ -1,58 +1,100 @@
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import apiUrl from '@/config/api'
-import { Divider, message } from 'antd'
-import { useRef, useState } from 'react'
+import { message } from 'antd'
+import { useEffect, useRef, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
-import ListDocument from '../document'
-import FileUpload from '../file-upload'
 import { Clipboard, ClipboardCheck } from 'lucide-react'
 import LogoutButton from '@/components/ui/logout'
 import BackButton from '@/components/ui/back'
 import { Link } from 'react-router-dom'
-
+import ChatHistorySidebar from '@/components/layouts/sidebar/ChatHistory' // pastikan pakai versi rename yang tadi
 
 export default function Home() {
   const [input, setInput] = useState('')
   const [messages, setMessages] = useState([])
   const [isLoading, setIsLoading] = useState(false)
-  const [refreshList, setRefreshList] = useState(false)
   const [copiedIndex, setCopiedIndex] = useState(null)
   const chatContainerRef = useRef(null)
+  const [selectedSession, setSelectedSession] = useState(null)
+  const token = localStorage.getItem('token')
 
-  const copyToClipboard = async (text, index) => {
-    await navigator.clipboard.writeText(text)
-    setCopiedIndex(index)
-    setTimeout(() => setCopiedIndex(null), 2000)
-  }
+  // 🔹 Ketika session berubah, otomatis ambil pesan lama
+  useEffect(() => {
+    if (selectedSession) {
+      fetchMessages(selectedSession)
+    }
+  }, [selectedSession])
 
-  const handleSend = async () => {
-    if (!input.trim()) return
-    setIsLoading(true)
-
+  // 🔹 Ambil pesan dari backend
+  const fetchMessages = async (sessionId) => {
     try {
-      const res = await apiUrl.post('/ask', { question: input })
-      const data = res.data
-
-      setMessages((prev) => [
-        ...prev,
-        { role: 'user', content: input },
-        { role: 'assistant', content: data.answer[0] },
-      ])
-      setInput('')
+      const res = await apiUrl.get(`/chat/${sessionId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      setMessages(res.data.messages || [])
     } catch (err) {
-      setMessages((prev) => [...prev, 'Error fetching response'])
-      console.log('err', err)
-    } finally {
-      setIsLoading(false)
+      console.error('Gagal memuat pesan:', err)
     }
   }
 
+  // 🔹 Kirim pertanyaan baru
+  const handleSend = async () => {
+  if (!input.trim()) return
+  setIsLoading(true)
+
+  try {
+    let sessionId = selectedSession
+
+    // 🔹 Kalau belum ada session, buat baru
+    if (!sessionId) {
+      const newChat = await apiUrl.post(
+        '/chat/new',
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      )
+      sessionId = newChat.data.session_id
+      setSelectedSession(sessionId)
+    }
+
+    // 🔹 Kirim pertanyaan
+    const res = await apiUrl.post(
+      '/ask',
+      { question: input, session_id: sessionId },
+      { headers: { Authorization: `Bearer ${token}` } }
+    )
+    const data = res.data
+
+    // Tambahkan ke tampilan
+    setMessages((prev) => [
+      ...prev,
+      { role: 'user', content: input },
+      { role: 'assistant', content: data.answer?.[0] || 'Tidak ada jawaban.' },
+    ])
+
+    // 🔹 Kalau ini pesan pertama, ubah judul chat
+    if (messages.length === 0) {
+      await apiUrl.put(
+        `/chat/${sessionId}/rename?title=${encodeURIComponent(input)}`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      )
+    }
+
+    setInput('')
+  } catch (err) {
+    console.log('err', err)
+    message.error('Gagal mengirim pesan')
+  } finally {
+    setIsLoading(false)
+  }
+}
+
+
   const handleClearResult = () => {
-    if (window.confirm('Are you sure you want to clear all chat messages?')) {
+    if (window.confirm('Hapus semua pesan di sesi ini?')) {
       setMessages([])
       message.success('Chat cleared successfully')
-
       if (chatContainerRef.current) {
         chatContainerRef.current.scrollTop = 0
       }
@@ -66,32 +108,45 @@ export default function Home() {
     }
   }
 
+  const copyToClipboard = async (text, index) => {
+    await navigator.clipboard.writeText(text)
+    setCopiedIndex(index)
+    setTimeout(() => setCopiedIndex(null), 2000)
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
-    <header
-      className="sticky top-0 z-50 flex w-full items-center justify-between border-b bg-white px-4 py-3 shadow-sm"
-    >
-      <h1 className="text-2xl font-bold text-gray-800">
-        <Link to="/home-admin" className="hover:text-gray-500 transition-colors">
-          RAG Chatbot
-        </Link>
-      </h1>
-      <div className="flex items-center space-x-2">
-        <BackButton />
-        <LogoutButton />
-      </div>
-    </header>
+      <header className="sticky top-0 z-50 flex w-full items-center justify-between border-b bg-white px-4 py-3 shadow-sm">
+        <h1 className="text-2xl font-bold text-gray-800">
+          <Link to="/home-admin" className="hover:text-gray-500 transition-colors">
+            RAG Chatbot
+          </Link>
+        </h1>
+        <div className="flex items-center space-x-2">
+          <BackButton />
+          <LogoutButton />
+        </div>
+      </header>
+
       <main className="flex-1 p-4">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-4 h-[calc(100vh-80px)]">
+          {/* 🔹 Sidebar: Kirim setSelectedSession agar klik sidebar bisa muat chat lama */}
           <div className="md:col-span-4 bg-white p-4 rounded shadow overflow-auto">
-            <FileUpload setRefreshList={setRefreshList} />
-            <Divider />
-            <ListDocument refreshList={refreshList} />
+            <ChatHistorySidebar
+              onSelectSession={(sessionId) => {
+                setSelectedSession(sessionId)
+                setMessages([]) 
+              }}
+            />
+
           </div>
 
+          {/* 🔹 Area chat */}
           <div className="md:col-span-8 bg-white p-4 rounded shadow flex flex-col h-full">
             <div className="flex items-center justify-between mb-4">
-              <h4 className="font-semibold">Chatbot</h4>
+              <h4 className="font-semibold">
+                {selectedSession ? 'Chat Aktif' : 'Pilih Riwayat Chat'}
+              </h4>
               {messages.length > 0 && (
                 <Button
                   variant="secondary"
@@ -104,8 +159,9 @@ export default function Home() {
               )}
             </div>
 
-            {/* Chat messages scrollable */}
+            {/* Chat messages */}
             <div
+              ref={chatContainerRef}
               className="flex-1 overflow-y-auto space-y-4 pr-1"
               style={{ maxHeight: 'calc(100vh - 200px)' }}
             >
@@ -123,7 +179,7 @@ export default function Home() {
                         : 'bg-gray-100 text-gray-900 rounded-br-none'
                     }`}
                   >
-                    <div className="prose prose-sm dark:prose-invert max-w-none [&_p]:mb-4 [&_br]:block [&_br]:mb-4">
+                    <div className="prose prose-sm dark:prose-invert max-w-none">
                       <ReactMarkdown>{msg.content}</ReactMarkdown>
                     </div>
 
@@ -145,12 +201,12 @@ export default function Home() {
 
               {isLoading && (
                 <div className="text-sm text-muted-foreground italic">
-                  Loading...
+                  Asisten sedang berpikir...
                 </div>
               )}
             </div>
 
-            {/* Fixed form */}
+            {/* Input area */}
             <form
               onSubmit={(e) => {
                 e.preventDefault()
@@ -160,15 +216,19 @@ export default function Home() {
             >
               <Textarea
                 className="flex-1"
-                placeholder="Type your message here... Use Alt + Enter shortcut to submit form"
+                placeholder={
+                  selectedSession
+                    ? 'Ketik pesan untuk melanjutkan percakapan...'
+                    : 'Pilih riwayat chat atau buat baru di sidebar'
+                }
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                disabled={isLoading}
+                disabled={isLoading || !selectedSession}
                 onKeyDown={handleKeyDown}
               />
               <Button
                 type="submit"
-                disabled={isLoading}
+                disabled={isLoading || !selectedSession}
                 className="cursor-pointer"
               >
                 {isLoading ? 'Sending...' : 'Send'}

@@ -22,10 +22,10 @@ const HomePage = () => {
         {userRole === 'admin' && (
           <>
             <button 
-              onClick={() => navigate(`${routePrefix}/user-management`)} 
+              onClick={() => navigate(`${routePrefix}/document`)} 
               className="p-4 bg-blue-500 text-white rounded-lg shadow hover:bg-blue-600"
             >
-              User Management
+              Document
             </button>
             <button 
               onClick={() => navigate(`${routePrefix}/database/connect`)} 
