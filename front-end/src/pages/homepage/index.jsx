@@ -28,10 +28,10 @@ const HomePage = () => {
               Document
             </button>
             <button 
-              onClick={() => navigate(`${routePrefix}/database/connect`)} 
+              onClick={() => navigate(`${routePrefix}/user-management`)} 
               className="p-4 bg-green-500 text-white rounded-lg shadow hover:bg-green-600"
             >
-              Database
+              User Management
             </button>
           </>
         )}
