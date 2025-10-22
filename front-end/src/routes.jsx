@@ -7,6 +7,7 @@ import Homepage from './pages/homepage'
 import UserManagement from './pages/auth/view_user'
 import AddUser from './pages/auth/add-user' 
 import MyAccount from './pages/auth/my-account'
+import ChatPage from './components/layouts/sidebar/ChatHistory'
 
 const AppRoutes = () => (
   <Routes>
@@ -20,6 +21,7 @@ const AppRoutes = () => (
       <Route path="/admin/user-management" element={<UserManagement/>}/>
       <Route path="/admin/add-user" element={<AddUser />}></Route>
       <Route path="/admin/my-account" element={<MyAccount/>}/>
+      <Route path="/admin/chat" element={<ChatPage/>}/>
     </Route>
 
     <Route element={<RequireAuth allowedRoles={['user']} />}>
