@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # ==================================
   # 1. DATABASE UTAMA (PostgreSQL)
@@ -10,8 +8,8 @@ services:
     restart: always
     environment:
       # Variabel lingkungan untuk konfigurasi DB
-      POSTGRES_USER: user_chatbot
-      POSTGRES_PASSWORD: password_rahasia
+      POSTGRES_USER: rag-gp
+      POSTGRES_PASSWORD: raviganteng
       POSTGRES_DB: chatbot_db
     volumes:
       # Volume untuk menyimpan data agar persisten
@@ -20,11 +18,32 @@ services:
       - 5432
     # Healthcheck: Wajib agar layanan lain tahu kapan DB siap
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U user_chatbot"]
+      test: ["CMD-SHELL", "pg_isready -U rag-gp && psql -U rag-gp -d chatbot_db -c 'SELECT 1'"]
       interval: 5s
       timeout: 5s
       retries: 5
       start_period: 10s
+
+  redis:
+    image: redis:latest
+    container_name: redis_broker
+    restart: always
+    expose:
+      - 6379
+
+  chromadb:
+    image: chromadb/chroma:latest
+    container_name: chromadb_server
+    restart: always
+    volumes:
+      # Volume ini yang menangani persistensi data ke direktori host
+      - chroma_data:/chroma/
+    expose:
+      - 8002 # Port internal yang digunakan
+
+    # --- COMMAND YANG DIPERBAIKI ---
+    command: ["run", "--host", "0.0.0.0", "--port", "8002", "--path", "/chroma/"]
+
 
   # ==================================
   # 2. MIGRATION (Alembic)
@@ -35,19 +54,19 @@ services:
       dockerfile: Dockerfile.app # Menggunakan lingkungan Python yang sama
     container_name: alembic_migration
     # PENTING: Perintah dijalankan sekali saja (tanpa restart: always)
-    
+
     # Perintah untuk menjalankan migrasi
     # Kita harus memastikan DB siap (melalui depends_on + healthcheck) sebelum menjalankan alembic
     command: ["alembic", "upgrade", "head"]
-    
+
     environment:
       # Kunci koneksi DB untuk Alembic
-      DATABASE_URL: "postgresql+psycopg2://user_chatbot:password_rahasia@postgres:5432/chatbot_db"
-      
+      DATABASE_URL: "postgresql+psycopg2://rag-gp:raviganteng@postgres:5432/chatbot_db"
+
     depends_on:
       postgres:
         # Kontainer ini hanya akan berjalan jika layanan 'postgres' dalam kondisi 'healthy'
-        condition: service_healthy 
+        condition: service_healthy
 
   # ==================================
   # 3. BACKEND (FastAPI)
@@ -64,17 +83,25 @@ services:
       - redis
       - chromadb
       # Wajib bergantung pada migration, agar API hanya berjalan setelah skema DB siap
-      - migrate 
+      - migrate
     environment:
       REDIS_URL: "redis://redis:6379/0"
       CHROMA_URL: "http://chromadb:8000"
       # Kunci koneksi DB untuk FastAPI
-      DATABASE_URL: "postgresql+psycopg2://user_chatbot:password_rahasia@postgres:5432/chatbot_db"
+      DATABASE_URL: "postgresql+psycopg2://rag-gp:raviganteng@postgres:5432/chatbot_db"
 
   # ==================================
   # 4. CELERY WORKER
   # ==================================
   worker:
+    build:
+      # 'context: .' menentukan direktori kerja (root proyek)
+      context: .
+      # 'dockerfile: Dockerfile.worker' menentukan file resep yang akan digunakan
+      dockerfile: Dockerfile.worker
+    container_name: chatbot_worker
+    restart: always
+
     # ... (Sama seperti sebelumnya)
     depends_on:
       - redis
@@ -84,7 +111,7 @@ services:
       REDIS_URL: "redis://redis:6379/0"
       CHROMA_URL: "http://chromadb:8000"
       # Kunci koneksi DB untuk Celery Worker
-      DATABASE_URL: "postgresql+psycopg2://user_chatbot:password_rahasia@postgres:5432/chatbot_db"
+      DATABASE_URL: "postgresql+psycopg2://rag-gp:raviganteng@postgres:5432/chatbot_db"
 
   # ... (Layanan chromadb, redis, dan frontend tetap sama)
 

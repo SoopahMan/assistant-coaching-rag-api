@@ -1,12 +1,19 @@
-FROM python:3.11-slim
+FROM python:3.12.9
 WORKDIR /app
 COPY requirements.txt .
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        libgl1-mesa-glx \
+        libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
+
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Menyalin folder 'app' (yang berisi Celery worker Anda)
-COPY ./app /app
+COPY ./app/. /app/
 
 # *** PERUBAHAN PENTING DI SINI ***
 # Ubah command agar Celery menunjuk ke 'app.nama_file_celery_anda'
 # Asumsi: Nama file Celery Anda adalah 'celery_worker.py' di dalam folder 'app'
-CMD ["celery", "-A", "app.worker", "worker", "--loglevel=info"]
+CMD ["celery", "-A", "worker:celery", "worker", "--loglevel=info"]
