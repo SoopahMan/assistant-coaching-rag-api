@@ -1,0 +1,12 @@
+FROM python:3.11-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Menyalin folder 'app' (yang berisi Celery worker Anda)
+COPY ./app /app
+
+# *** PERUBAHAN PENTING DI SINI ***
+# Ubah command agar Celery menunjuk ke 'app.nama_file_celery_anda'
+# Asumsi: Nama file Celery Anda adalah 'celery_worker.py' di dalam folder 'app'
+CMD ["celery", "-A", "app.worker", "worker", "--loglevel=info"]

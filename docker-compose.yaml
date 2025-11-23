@@ -1,0 +1,94 @@
+version: '3.8'
+
+services:
+  # ==================================
+  # 1. DATABASE UTAMA (PostgreSQL)
+  # ==================================
+  postgres:
+    image: postgres:15-alpine
+    container_name: postgres_db
+    restart: always
+    environment:
+      # Variabel lingkungan untuk konfigurasi DB
+      POSTGRES_USER: user_chatbot
+      POSTGRES_PASSWORD: password_rahasia
+      POSTGRES_DB: chatbot_db
+    volumes:
+      # Volume untuk menyimpan data agar persisten
+      - postgres_data:/var/lib/postgresql/data
+    expose:
+      - 5432
+    # Healthcheck: Wajib agar layanan lain tahu kapan DB siap
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user_chatbot"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ==================================
+  # 2. MIGRATION (Alembic)
+  # ==================================
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile.app # Menggunakan lingkungan Python yang sama
+    container_name: alembic_migration
+    # PENTING: Perintah dijalankan sekali saja (tanpa restart: always)
+    
+    # Perintah untuk menjalankan migrasi
+    # Kita harus memastikan DB siap (melalui depends_on + healthcheck) sebelum menjalankan alembic
+    command: ["alembic", "upgrade", "head"]
+    
+    environment:
+      # Kunci koneksi DB untuk Alembic
+      DATABASE_URL: "postgresql+psycopg2://user_chatbot:password_rahasia@postgres:5432/chatbot_db"
+      
+    depends_on:
+      postgres:
+        # Kontainer ini hanya akan berjalan jika layanan 'postgres' dalam kondisi 'healthy'
+        condition: service_healthy 
+
+  # ==================================
+  # 3. BACKEND (FastAPI)
+  # ==================================
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.app
+    container_name: chatbot_api
+    restart: always
+    ports:
+      - "8000:80"
+    depends_on:
+      - redis
+      - chromadb
+      # Wajib bergantung pada migration, agar API hanya berjalan setelah skema DB siap
+      - migrate 
+    environment:
+      REDIS_URL: "redis://redis:6379/0"
+      CHROMA_URL: "http://chromadb:8000"
+      # Kunci koneksi DB untuk FastAPI
+      DATABASE_URL: "postgresql+psycopg2://user_chatbot:password_rahasia@postgres:5432/chatbot_db"
+
+  # ==================================
+  # 4. CELERY WORKER
+  # ==================================
+  worker:
+    # ... (Sama seperti sebelumnya)
+    depends_on:
+      - redis
+      - chromadb
+      - migrate # Tambahkan dependensi ke 'migrate'
+    environment:
+      REDIS_URL: "redis://redis:6379/0"
+      CHROMA_URL: "http://chromadb:8000"
+      # Kunci koneksi DB untuk Celery Worker
+      DATABASE_URL: "postgresql+psycopg2://user_chatbot:password_rahasia@postgres:5432/chatbot_db"
+
+  # ... (Layanan chromadb, redis, dan frontend tetap sama)
+
+volumes:
+  redis_data:
+  chroma_data:
+  postgres_data: # Volume baru untuk data PostgreSQL
