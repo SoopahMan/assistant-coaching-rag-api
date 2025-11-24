@@ -71,31 +71,33 @@ export default function ChatHistorySidebar({ onSelectSession }) {
   }
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex justify-between items-center mb-3">
-        <h3 className="font-semibold text-lg">Riwayat Chat</h3>
+    <div className="flex flex-col h-full p-2 sm:p-4">
+      <div className="flex justify-between items-center mb-3 gap-2">
+        <h3 className="font-semibold text-base sm:text-lg">Riwayat Chat</h3>
         <Button
           type="primary"
           icon={<Plus size={16} />}
           onClick={handleNewChat}
-          className="bg-blue-600 text-white"
+          className="bg-blue-600 text-white px-2 sm:px-3 py-1 text-xs sm:text-sm"
         >
-          Baru
+          <span className="hidden sm:inline">Baru</span>
         </Button>
       </div>
 
-      <div className="space-y-2 overflow-y-auto flex-1">
+      <div className="space-y-1.5 overflow-y-auto flex-1 pr-1">
         {chats.length === 0 && (
-          <p className="text-gray-500 italic text-sm">Belum ada riwayat chat</p>
+          <p className="text-gray-500 italic text-xs sm:text-sm">
+            Belum ada riwayat chat
+          </p>
         )}
 
         {chats.map((chat) => (
           <div
             key={chat.id}
-            className="group flex justify-between items-center bg-gray-50 hover:bg-gray-100 rounded px-3 py-2 cursor-pointer transition"
+            className="group flex justify-between items-center bg-gray-50 hover:bg-gray-100 rounded-lg px-3 py-2 cursor-pointer transition"
             onClick={() => onSelectSession(chat.id)}
           >
-            <div className="flex-1 truncate">
+            <div className="flex-1 min-w-0">
               {editingId === chat.id ? (
                 <Input
                   size="small"
@@ -106,23 +108,28 @@ export default function ChatHistorySidebar({ onSelectSession }) {
                   autoFocus
                 />
               ) : (
-                <p className="text-sm font-medium text-gray-700 truncate">
-                  {chat.title}
-                </p>
+                <>
+                  <p className="text-sm font-medium text-gray-700 truncate">
+                    {chat.title}
+                  </p>
+                  <p className="text-xs text-gray-400 truncate">
+                    {chat.last_message}
+                  </p>
+                </>
               )}
-              <p className="text-xs text-gray-400 truncate">{chat.last_message}</p>
             </div>
 
-            <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition">
+            {/* Ikon selalu terlihat di mobile (tanpa hover) */}
+            <div className="flex gap-2 ml-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition">
               {editingId === chat.id ? (
                 <Check
-                  size={16}
+                  size={18}
                   className="text-green-600 cursor-pointer"
                   onClick={() => handleRenameChat(chat.id)}
                 />
               ) : (
                 <Edit3
-                  size={16}
+                  size={18}
                   className="text-gray-500 cursor-pointer"
                   onClick={(e) => {
                     e.stopPropagation()
@@ -132,7 +139,7 @@ export default function ChatHistorySidebar({ onSelectSession }) {
                 />
               )}
               <Trash2
-                size={16}
+                size={18}
                 className="text-red-500 cursor-pointer"
                 onClick={(e) => {
                   e.stopPropagation()
@@ -144,5 +151,6 @@ export default function ChatHistorySidebar({ onSelectSession }) {
         ))}
       </div>
     </div>
+
   )
 }

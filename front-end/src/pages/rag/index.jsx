@@ -131,7 +131,7 @@ export default function Home() {
       <main className="flex-1 p-4">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-4 h-[calc(100vh-80px)]">
           {/* 🔹 Sidebar: Kirim setSelectedSession agar klik sidebar bisa muat chat lama */}
-          <div className="md:col-span-4 bg-white p-4 rounded shadow overflow-auto">
+          <div >
             <ChatHistorySidebar
               onSelectSession={(sessionId) => {
                 setSelectedSession(sessionId)
