@@ -17,12 +17,12 @@ services:
     expose:
       - 5432
     # Healthcheck: Wajib agar layanan lain tahu kapan DB siap
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U rag-gp && psql -U rag-gp -d chatbot_db -c 'SELECT 1'"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
+#    healthcheck:
+#      test: ["CMD-SHELL", "pg_isready -U rag-gp && psql -U rag-gp -d chatbot_db -c 'SELECT 1'"]
+#      interval: 5s
+#      timeout: 5s
+#      retries: 5
+#      start_period: 10s
 
   redis:
     image: redis:latest
@@ -40,7 +40,12 @@ services:
       - chroma_data:/chroma/
     expose:
       - 8002 # Port internal yang digunakan
-
+#    healthcheck:
+#      test: ["CMD", "curl", "-f", "http://localhost:8002/api/v1/heartbeat"]
+#      interval: 10s
+#      timeout: 5s
+#      retries: 5
+#      start_period: 20s
     # --- COMMAND YANG DIPERBAIKI ---
     command: ["run", "--host", "0.0.0.0", "--port", "8002", "--path", "/chroma/"]
 
@@ -63,10 +68,10 @@ services:
       # Kunci koneksi DB untuk Alembic
       DATABASE_URL: "postgresql+psycopg2://rag-gp:raviganteng@postgres:5432/chatbot_db"
 
-    depends_on:
-      postgres:
+   # depends_on:
+      #postgres:
         # Kontainer ini hanya akan berjalan jika layanan 'postgres' dalam kondisi 'healthy'
-        condition: service_healthy
+        #condition: service_healthy
 
   # ==================================
   # 3. BACKEND (FastAPI)
@@ -79,14 +84,17 @@ services:
     restart: always
     ports:
       - "8000:80"
+    volumes:
+      - uploads_shared:/app/uploads
     depends_on:
       - redis
       - chromadb
+#          condition: service_healthy
       # Wajib bergantung pada migration, agar API hanya berjalan setelah skema DB siap
       - migrate
     environment:
       REDIS_URL: "redis://redis:6379/0"
-      CHROMA_URL: "http://chromadb:8000"
+      CHROMA_URL: "http://chromadb:8002"
       # Kunci koneksi DB untuk FastAPI
       DATABASE_URL: "postgresql+psycopg2://rag-gp:raviganteng@postgres:5432/chatbot_db"
 
@@ -102,6 +110,9 @@ services:
     container_name: chatbot_worker
     restart: always
 
+    volumes:
+      - uploads_shared:/app/uploads
+
     # ... (Sama seperti sebelumnya)
     depends_on:
       - redis
@@ -109,7 +120,7 @@ services:
       - migrate # Tambahkan dependensi ke 'migrate'
     environment:
       REDIS_URL: "redis://redis:6379/0"
-      CHROMA_URL: "http://chromadb:8000"
+      CHROMA_URL: "http://chromadb:8002"
       # Kunci koneksi DB untuk Celery Worker
       DATABASE_URL: "postgresql+psycopg2://rag-gp:raviganteng@postgres:5432/chatbot_db"
 
@@ -119,3 +130,4 @@ volumes:
   redis_data:
   chroma_data:
   postgres_data: # Volume baru untuk data PostgreSQL
+  uploads_shared:

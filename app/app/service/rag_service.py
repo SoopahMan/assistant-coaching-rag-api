@@ -13,14 +13,20 @@ from haystack.components.generators import OpenAIGenerator
 from haystack.utils import Secret
 from haystack_integrations.components.retrievers.chroma import ChromaEmbeddingRetriever
 from haystack_integrations.document_stores.chroma import ChromaDocumentStore
+from urllib.parse import urlparse
+
 
 load_dotenv()
 
+
 openai_api_key = os.getenv("OPENAI_API_KEY", "")
 
+chroma_url_str = os.getenv("CHROMA_URL", "http://chromadb:8002")
+parsed_url = urlparse(chroma_url_str)
+
 document_store = ChromaDocumentStore(
-    host="localhost",
-    port=8002,
+    host=parsed_url.hostname,
+    port=parsed_url.port,
     collection_name="rag_gp_documents",
 )
 
